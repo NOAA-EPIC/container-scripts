@@ -154,7 +154,7 @@ Once the externalized spack-stack is built, the UFS WM or Application needs to p
 | ```MODULEPATH``` variable paths                                                       | 
 |-----------                                                                            |
 |/full/path/to/modulefiles/spack-stack-1.9.2/Core                                       |   
-|/full/path/to/modulefiles/spack-stack-1.9.2/intel-oneapi-mpi/2021.13-<spack-hash>/gcc/11.4.0|   
+|/full/path/to/modulefiles/spack-stack-1.9.2/intel-oneapi-mpi/2021.13-[spack-hash]/gcc/11.4.0|   
 
 | Intel Packages |
 |-----------     |
