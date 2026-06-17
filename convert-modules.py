@@ -5,6 +5,29 @@ import subprocess
 from argparse import ArgumentParser
 import stat
 
+
+def _top_level_bind_dir(path):
+    abs_path = os.path.abspath(path)
+    parts = abs_path.split(os.sep)
+
+    if len(parts) > 1 and parts[1]:
+        return os.sep + parts[1]
+
+    return os.sep
+
+
+def get_bind_dirs(path=None):
+    if path is None:
+        path = os.getcwd()
+
+    bind_dirs = []
+    for candidate in (path, os.path.realpath(path)):
+        bind_dir = _top_level_bind_dir(candidate)
+        if bind_dir not in bind_dirs:
+            bind_dirs.append(bind_dir)
+
+    return bind_dirs
+
 def is_binary_executable(file_path):
     # Check if the file exists and is a regular file
     if not os.path.isfile(file_path):
@@ -181,9 +204,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # set the img as an environment variable
     os.environ['img'] = args.img
-    # get the basename of PWD to bind with singularity
-    command = "dirname $PWD | awk -F'/' '{print $2}'"
-    basepath = "/"+os.popen(command).read().strip()+" "
+    # include both logical and real paths so symlinked drives still bind correctly
+    base_bind_dirs = get_bind_dirs()
+    basepath = ",".join(base_bind_dirs)+" "
 
     # Ensure only one argument is used
     if args.host_compilers is True and args.sandbox_compilers is not None:
@@ -200,10 +223,12 @@ if __name__ == "__main__":
         os.system("sed -i 's|INIT_LOCAL_DIRS=\(.*\)|INIT_LOCAL_DIRS="+args.bind_dirs+"|g' bind_directories.conf")
 
         # convert arg to a list
-        bind_dirs_lst = args.bind_dirs.split(",")
-        # add base dir if not in list
-        if basepath.replace("/","").replace(" ","")  not in bind_dirs_lst:
-            bind_dirs_lst.append(basepath.replace("/","").replace(" ",""))
+        bind_dirs_lst = [bd.strip().lstrip("/") for bd in args.bind_dirs.split(",") if bd.strip()]
+        # add base bind dir(s) if not in list
+        for base_dir in base_bind_dirs:
+            base_dir_name = base_dir.lstrip("/")
+            if base_dir_name and base_dir_name not in bind_dirs_lst:
+                bind_dirs_lst.append(base_dir_name)
         # create dirs_cmd var
         dirs_cmd=""
         for bd in bind_dirs_lst:
